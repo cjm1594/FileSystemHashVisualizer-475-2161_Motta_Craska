@@ -1,0 +1,27 @@
+Programming Strategy
+
+Authors: Christian Motta and Sean Craska
+
+Language: JavaScript
+
+JavaScript will be used to store each file system object. This object will include a string to store the name
+of the FS object, an array to store the hashes of that object, and another array to store children of that object.
+
+Hashing algorithm:
+
+1. User inputs which hashes to use
+2. Program starts at head of file system.
+3. Program hashes current file, stores results in array of hashes.
+4. Program stores children in in child array, stores 0s for all entries if node is a file and not a directory.
+5. If no children, return to last node.
+6. Last node == root node, go to display function.
+7. If children, iterate through array. Repeat steps 3 - 7 until display function reached.
+
+Display algortihm:
+
+1. Start at root node.
+2. If child array not all 0s, display node structure.
+3. Else, diplsay leaf structure, return to previous node.
+# Each displayed structure will contain the file/directory name and calculated hashes.
+4. If previous node == root node, exit program.
+5. For each entry in child array, repeat steps 1 - 5 until program exits.
