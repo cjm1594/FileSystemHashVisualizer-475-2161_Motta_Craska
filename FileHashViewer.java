@@ -56,12 +56,11 @@ public class FileHashViewer {
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException {
         // Gathers hashes to use from user.
         ArrayList<String> selections = new ArrayList<>();
-        System.out.println("Please enter select your hashes:");
+        System.out.println("Please enter select your 0hashes:");
         System.out.println("MD5");
         System.out.println("SHA1");
         System.out.println("SHA-256");
         System.out.println("0 = Finished selections");
-        //String currSelection = "None";
         Scanner scan = new Scanner(System.in);
         while (true){
             String option = scan.next();
@@ -82,14 +81,21 @@ public class FileHashViewer {
         /**Based off of solution found at http://stackoverflow.com/questions/2885173/how-to-create-a-file-and-write-to-a-file-in-java
          * Outputs all directories and hashes to a text file for further processing.
          */
-        ArrayList<String> output = new ArrayList<>();
-        printNodes(root, output);
+        ArrayList<String> output = new ArrayList<>(); //Array for text output.
+        ArrayList<String> csvOutput = new ArrayList<>(); //Array for D3js output.
+        csvOutput.add("id,value"); //Needed at top of CSV file.
+        printNodes(root, output); //Sends tree to standard printing.
+        csvNodes(root, csvOutput); //Sends tree to CSV printing.
+        
+        //Writes text representation to file.
         Path outFile = Paths.get("hashOutput.txt");
         Files.write(outFile, output, Charset.forName("UTF-8"));
         
-        //debug print statements
-        //System.out.print("\n");
-        //System.out.println(root.children.get(2).currentDir);
+        //Writes CSV representation to file.
+        Path outFile2 = Paths.get("hashOutput.csv");
+        Files.write(outFile2, csvOutput, Charset.forName("UTF-8"));
+        
+        
     }
     
     /**
@@ -97,14 +103,15 @@ public class FileHashViewer {
      * @param node
      */
     public static void populateNode(FileNode node, ArrayList selections) throws NoSuchAlgorithmException, IOException{
-        //System.out.println("Processing directory: " + node.currentDir);
         ArrayList<String> splitDir = new ArrayList<>();
         /*
         * Runs the cmd line commands. Based off of http://stackoverflow.com/questions/15464111/run-cmd-commands-through-java
         */
+        ProcessBuilder cd = new ProcessBuilder ("cmd.exe", "/c", "cd " + node.currentDir + "\\"); //CDs to directory
         ProcessBuilder dir = new ProcessBuilder ("cmd.exe", "/c", "dir " + node.currentDir); //Runs the dir command for the current directory.
         dir.redirectErrorStream(true);
         try{
+            cd.start();
             Process d = dir.start();
             BufferedReader dirOut = new BufferedReader(new InputStreamReader(d.getInputStream())); //Sends cmd line output to program.
             String dirLine;
@@ -112,7 +119,6 @@ public class FileHashViewer {
             //Allows the program to capture the output.
             while (true){
                 dirLine = dirOut.readLine();
-                //System.out.println(dirLine);
                 
                 //Stops loop once cmd line output is finished.
                 if (dirLine == null){
@@ -156,10 +162,8 @@ public class FileHashViewer {
                     FileNode nextNode = new FileNode();
                     nextNode.currentDir = next; //New node gets the name of the next directory.
                     nextNode.dirLevel = node.dirLevel++; //New node's dir level inserted.
-                    //System.out.println("Adding directory: " + nextNode.currentDir);
                     nextNode.prevNode = node; //New node's previous node is the current node.
                     node.children.add(nextNode); //Adds this node as a child of the current node
-                    //hashFunction(nextNode, selections);
                     parseNode(nextNode, selections); //Theoretically should allow the program to recurse, although it refuses to process the new nodes.
                 }
                 
@@ -172,11 +176,9 @@ public class FileHashViewer {
                     FileNode nextNode = new FileNode();
                     nextNode.currentDir = next;
                     nextNode.dirLevel = node.dirLevel++; 
-                    //System.out.println("Adding new file: " + nextNode.currentDir);
                     nextNode.prevNode = node;
                     node.children.add(nextNode);
                     hashFunction(nextNode, selections);
-                    //break;
                 }
                 i++;
             }
@@ -194,7 +196,6 @@ public class FileHashViewer {
     public static void parseNode(FileNode node, ArrayList selections) throws NoSuchAlgorithmException, IOException{
         
         //Attempts to force the system to go deeper into the directory structure by cding into the directory.
-        //System.out.println("Current dir: " + node.currentDir); //Debug print statement to see which dir is targeted.
         ProcessBuilder cd = new ProcessBuilder ("cmd.exe", "/c", "cd " + node.currentDir); //Runs the dir command for the current directory.
         cd.redirectErrorStream(true);
         try{
@@ -208,7 +209,6 @@ public class FileHashViewer {
                 /*
                 * Debug print statement to see which dir is about to be parsed through.
                 */
-                //System.out.println("Parsing through :" + node.children.get(i).currentDir);
                 populateNode(node.children.get(i), selections); //Should populate the child node with its own children, just as it does with C:.
             }
         }
@@ -250,13 +250,6 @@ public class FileHashViewer {
             //Adds hash to array of hashes.
             node.hashVals.add(dString + ": " +hashString.toString());
         }
-        /**
-         * Debug print statements to ensure hashes are being stored.
-         */
-        System.out.println("Filename: " + node.currentDir);
-        for(int k = 0; k < node.hashVals.size(); k++){
-            System.out.println(node.hashVals.get(k));
-        }
     }
     
     /**
@@ -292,5 +285,44 @@ public class FileHashViewer {
         
         //Adds a newline after each node for easier readability.
         output.add(" ");
+    }
+    
+    /**
+     * Function that writes node to CSV file in representation used by D3js file.
+     * @param node
+     * @param csvOutput 
+     */
+    public static void csvNodes(FileNode node, ArrayList<String> csvOutput){
+        String holder = node.currentDir; //Stores information to be stored in file.
+        //Creates CSV entry for directory nodes.
+        if(!(node.children.isEmpty())){
+           holder = holder + ","; //Appends , to string for CSV format.
+           holder = holder.replace('.', ' '); //Changes all dots to spaces to prevent errors in D3js output.
+           holder = holder.replace('\\', '.'); //Changes all \ characters to dots for D3js output.
+           csvOutput.add(holder); //Adds processed line to file.
+           //Repeats process for each child node.
+           for(int i = 0; i< node.children.size(); i++){
+               csvNodes(node.children.get(i), csvOutput);
+           }
+        }
+        //Creates CSV entry for file nodes.
+        if(!(node.hashVals.isEmpty())){
+            holder = holder.replace('.', ' '); //Same as above.
+            holder = holder + " Hashes: "; //Adds hashes section to output line.
+            //Appends actual hashes to output line.
+            for(int i = 0; i < node.hashVals.size(); i++){
+                //Allows for extra hash to be added if more remain.
+                if(i != (node.hashVals.size() - 1)){
+                    holder = holder + node.hashVals.get(i) + " ";
+                    holder = holder.replace('\\', '.'); //Same as above.
+                }
+                //Appends , and value to line if on the last hash.
+                else {
+                    holder = holder + node.hashVals.get(i) + ",4";
+                    holder = holder.replace('\\', '.');
+                }
+            }
+            csvOutput.add(holder); //Adds line to CSV output array.
+        }
     }
 }
