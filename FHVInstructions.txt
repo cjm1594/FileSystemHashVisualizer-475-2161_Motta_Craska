@@ -1,0 +1,14 @@
+File Hash Viewer
+By Christian Motta and Sean Craska
+
+Operational instructions:
+1. Download source files from Github repo.
+2. Place JAR file on media/PC of choice.
+3. Place modified Cluster Dendrogram D3JS code or D3JS code of your choosing in the public facing file on your
+   web server (For example, in the inetpub folder on Windows Server installations).
+   	Note: Cluster Dendrogram source code found here: http://bl.ocks.org/mbostock/4063570
+4. Create file system on storage device needed for program to store info. The format it expects is as follows:
+	yourDriveLetter:\FHV\targetPCName\targetPCDriveLetter
+5. Run the program.
+6. Place the generated CSV file for the drive of your choosing in the same place as the D3JS code on your web server.
+7. Restart the service, and navigate to the address of your webserver. The D3JS output should be present.
